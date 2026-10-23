@@ -1,0 +1,143 @@
+services:
+  rabbitmq:
+    image: rabbitmq:4.2-management-alpine
+    # RabbitMQ хранит данные под именем узла, которое берётся из hostname.
+    # Без фиксированного hostname каждый пересозданный контейнер получает случайное имя
+    # и стартует с пустым состоянием, теряя очереди, сообщения и пользователей.
+    hostname: rabbitmq
+    env_file:
+      - path: rabbitmq/.env.example
+      - path: rabbitmq/.env
+        required: false
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/conf.d/20-custom.conf:ro
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Применяет топологию очередей из rabbitmq/definitions.json, как миграции для базы данных.
+  # Запускается один раз и завершается; relay и consumer ждут его успешного завершения.
+  # Если загружать definitions при старте брокера (load_definitions), RabbitMQ не создаст
+  # пользователя из rabbitmq/.env, и учётные данные пришлось бы хранить в файле definitions.
+  # Импорт идемпотентен: создаёт недостающие очереди и обновляет политики на месте.
+  rabbitmq-definitions:
+    image: rabbitmq:4.2-management-alpine
+    env_file:
+      - path: rabbitmq/.env.example
+      - path: rabbitmq/.env
+        required: false
+    volumes:
+      - ./rabbitmq/definitions.json:/definitions.json:ro
+    entrypoint: ["sh", "-c"]
+    command:
+      - >-
+        wget -q -O /dev/null
+        --header "Content-Type: application/json"
+        --post-file /definitions.json
+        "http://$${RABBITMQ_DEFAULT_USER}:$${RABBITMQ_DEFAULT_PASS}@rabbitmq:15672/api/definitions"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:18-alpine
+    env_file:
+      - path: postgres/.env.example
+      - path: postgres/.env
+        required: false
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrations:
+    build:
+      context: .
+      dockerfile: migrations/Dockerfile
+    env_file:
+      - path: migrations/.env.example
+      - path: migrations/.env
+        required: false
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    env_file:
+      - path: api/.env.example
+      - path: api/.env
+        required: false
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+      start_interval: 1s
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  consumer:
+    build:
+      context: .
+      dockerfile: consumer/Dockerfile
+    env_file:
+      - path: consumer/.env.example
+      - path: consumer/.env
+        required: false
+    depends_on:
+      rabbitmq-definitions:
+        condition: service_completed_successfully
+      migrations:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  relay:
+    build:
+      context: .
+      dockerfile: relay/Dockerfile
+    env_file:
+      - path: relay/.env.example
+      - path: relay/.env
+        required: false
+    depends_on:
+      rabbitmq-definitions:
+        condition: service_completed_successfully
+      migrations:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  webhook-sink:
+    image: python:3.14-slim
+    profiles: [loadtest]
+    environment:
+      WEBHOOK_FAILURE_RATE: "0.1"
+    volumes:
+      - ./loadtest/webhook_sink.py:/webhook_sink.py:ro
+    command: ["python", "-u", "/webhook_sink.py"]
+
+volumes:
+  rabbitmq_data:
+  postgres_data:

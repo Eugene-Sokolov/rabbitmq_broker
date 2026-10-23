@@ -1,0 +1,37 @@
+[project]
+name = "migrations"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "alembic>=1.20.0",
+    "data",
+]
+
+[tool.uv.sources]
+data = { workspace = true }
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.alembic]
+script_location = "%(here)s/alembic"
+file_template = "%%(year)d_%%(month).2d_%%(day).2d_%%(hour).2d%%(minute).2d-%%(rev)s_%%(slug)s"
+
+[[tool.alembic.post_write_hooks]]
+name = "ruff_format"
+type = "module"
+module = "ruff"
+options = "format REVISION_SCRIPT_FILENAME"
+
+[[tool.alembic.post_write_hooks]]
+name = "ruff_check"
+type = "module"
+module = "ruff"
+options = "check --fix REVISION_SCRIPT_FILENAME"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "testcontainers[postgres]>=4.15.0",
+]

@@ -1,0 +1,31 @@
+[tool.uv.workspace]
+members = [
+    "api",
+    "consumer",
+    "data",
+    "migrations",
+    "relay",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.17.1",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "COM812", "CPY001",
+    "D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "D202", "D203", "D213", "D400", "D415",
+    "EM101", "EM102", "FA100", "G004", "INP001", "RET505", "RUF001", "RUF002", "RUF003", "RUF010", "PLR0913",
+    "TD002", "TID252", "TRY003", "TRY300"
+]
+
+[tool.ruff.lint.isort]
+lines-after-imports = 2
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101", "PLR2004"]
