@@ -56,7 +56,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -97,7 +97,6 @@ services:
     depends_on:
       migrations:
         condition: service_completed_successfully
-    restart: unless-stopped
 
   consumer:
     build:
@@ -112,7 +111,6 @@ services:
         condition: service_completed_successfully
       migrations:
         condition: service_completed_successfully
-    restart: unless-stopped
 
   relay:
     build:
@@ -127,7 +125,6 @@ services:
         condition: service_completed_successfully
       migrations:
         condition: service_completed_successfully
-    restart: unless-stopped
 
   webhook-sink:
     image: python:3.14-slim
