@@ -10,10 +10,17 @@ ENV UV_COMPILE_BYTECODE=1 \
     PATH="/app/.venv/bin:$PATH"
 
 COPY pyproject.toml uv.lock ./
+COPY migrations/pyproject.toml migrations/
+COPY data/pyproject.toml data/
 RUN uv sync --frozen --no-dev --no-install-workspace --package migrations
 
-COPY . .
-RUN uv sync --locked --no-dev --package migrations
+COPY data/src data/src
+COPY migrations/alembic.ini migrations/
+COPY migrations/alembic migrations/alembic
+RUN uv sync --frozen --no-dev --package migrations
+
+RUN useradd --system --no-create-home app
+USER app
 
 WORKDIR /app/migrations
 

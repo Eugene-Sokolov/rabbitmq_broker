@@ -676,6 +676,7 @@ source = { virtual = "migrations" }
 dependencies = [
     { name = "alembic" },
     { name = "data" },
+    { name = "pydantic-settings" },
 ]
 
 [package.dev-dependencies]
@@ -688,6 +689,7 @@ dev = [
 requires-dist = [
     { name = "alembic", specifier = ">=1.20.0" },
     { name = "data", editable = "data" },
+    { name = "pydantic-settings", specifier = ">=2.16.1" },
 ]
 
 [package.metadata.requires-dev]
