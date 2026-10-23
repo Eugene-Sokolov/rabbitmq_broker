@@ -11,6 +11,9 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from data.enums import Currency, PaymentStatus
 
 
+WEBHOOK_URL_MAX_LENGTH = 2048
+
+
 def _str_enum(enum: type[StrEnum], name: str) -> Enum:
     return Enum(
         enum,
@@ -43,7 +46,7 @@ class Payment(Base):
         _str_enum(PaymentStatus, "payment_status"), default=PaymentStatus.PENDING
     )
     idempotency_key: Mapped[str] = mapped_column(String(255), unique=True)
-    webhook_url: Mapped[str] = mapped_column(String(2048))
+    webhook_url: Mapped[str] = mapped_column(String(WEBHOOK_URL_MAX_LENGTH))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

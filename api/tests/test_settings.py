@@ -38,8 +38,16 @@ def test_settings_reject_empty_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
         Settings()
 
 
-@pytest.mark.parametrize("url", ["mysql://user:pass@db/payments", "not-a-url"])
-def test_settings_reject_non_postgres_database_url(
+@pytest.mark.parametrize(
+    "url",
+    [
+        "mysql://user:pass@db/payments",
+        "postgresql://user:pass@db/payments",
+        "postgresql+psycopg://user:pass@db/payments",
+        "not-a-url",
+    ],
+)
+def test_settings_reject_non_asyncpg_database_url(
     monkeypatch: pytest.MonkeyPatch,
     url: str,
 ) -> None:

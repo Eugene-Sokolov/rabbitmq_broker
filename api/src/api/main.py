@@ -21,7 +21,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(
         title="Payments API",
         version="0.1.0",
-        description=("Accepts payments for asynchronous processing and reports their status."),
+        description="Accepts payments for asynchronous processing and reports their status.",
         lifespan=lifespan,
     )
     app.state.settings = settings

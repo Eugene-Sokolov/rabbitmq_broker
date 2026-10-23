@@ -3,7 +3,7 @@ from typing import Any
 from uuid import UUID, uuid7
 
 import pytest
-from data.models import Outbox
+from data.models import WEBHOOK_URL_MAX_LENGTH, Outbox
 from data.repositories.payments import PAYMENT_CREATED_EVENT
 from httpx import AsyncClient, Response
 from sqlalchemy import select
@@ -11,6 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 
 PAYMENTS_URL = "/api/v1/payments"
+WEBHOOK_URL_PREFIX = "https://merchant.example.com/"
+
+
+def _url_of_length(length: int) -> str:
+    return WEBHOOK_URL_PREFIX + "a" * (length - len(WEBHOOK_URL_PREFIX))
 
 
 def _body(**overrides: object) -> dict[str, object]:
@@ -106,6 +111,7 @@ async def test_create_payment_requires_idempotency_key(client: AsyncClient) -> N
         {"amount": "10.001"},
         {"currency": "GBP"},
         {"webhook_url": "not-a-url"},
+        {"webhook_url": _url_of_length(WEBHOOK_URL_MAX_LENGTH + 1)},
         {"description": None},
     ],
 )
@@ -116,6 +122,15 @@ async def test_create_payment_rejects_invalid_body(
     response = await _create(client, **overrides)
 
     assert response.status_code == 422
+
+
+async def test_create_payment_accepts_webhook_url_of_max_length(client: AsyncClient) -> None:
+    url = _url_of_length(WEBHOOK_URL_MAX_LENGTH)
+
+    created = (await _create(client, webhook_url=url)).json()
+    response = await client.get(f"{PAYMENTS_URL}/{created['payment_id']}")
+
+    assert response.json()["webhook_url"] == url
 
 
 async def test_get_payment_returns_details(client: AsyncClient) -> None:

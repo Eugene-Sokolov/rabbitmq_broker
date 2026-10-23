@@ -1,11 +1,18 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Self
+from typing import Annotated, Any, Self
 from uuid import UUID
 
 from data.enums import Currency, PaymentStatus
+from data.models import WEBHOOK_URL_MAX_LENGTH
 from data.repositories.payments import PaymentRead
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import AfterValidator, BaseModel, Field, HttpUrl
+
+
+def _check_webhook_url_length(url: HttpUrl) -> HttpUrl:
+    if len(str(url)) > WEBHOOK_URL_MAX_LENGTH:
+        raise ValueError(f"URL should have at most {WEBHOOK_URL_MAX_LENGTH} characters")
+    return url
 
 
 class PaymentCreateRequest(BaseModel):
@@ -26,8 +33,11 @@ class PaymentCreateRequest(BaseModel):
         description="Arbitrary JSON object stored with the payment and returned as is.",
         examples=[{"order_id": 1042, "customer_id": "c-77"}],
     )
-    webhook_url: HttpUrl = Field(
-        description="URL that receives a POST notification once the payment is processed.",
+    webhook_url: Annotated[HttpUrl, AfterValidator(_check_webhook_url_length)] = Field(
+        description=(
+            "URL that receives a POST notification once the payment is processed. "
+            f"At most {WEBHOOK_URL_MAX_LENGTH} characters after normalization."
+        ),
         examples=["https://merchant.example.com/webhooks/payments"],
     )
 
