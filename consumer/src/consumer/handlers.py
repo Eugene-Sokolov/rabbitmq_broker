@@ -1,12 +1,11 @@
 import logging
-from typing import Protocol
 from uuid import UUID
 
 from faststream.rabbit import Channel, RabbitBroker
 from faststream.rabbit.annotations import RabbitMessage
 from pydantic import BaseModel
 
-from consumer.services.payments import PaymentNotFoundError
+from consumer.services.payments import PaymentNotFoundError, PaymentProcessing
 from consumer.topology import ATTEMPT_HEADER, PAYMENTS_QUEUE, RetryPolicy, retry_queue
 
 
@@ -15,10 +14,6 @@ logger = logging.getLogger(__name__)
 
 class PaymentCreatedMessage(BaseModel):
     payment_id: UUID
-
-
-class PaymentProcessing(Protocol):
-    async def process(self, payment_id: UUID) -> object: ...
 
 
 def register_handlers(
@@ -52,5 +47,7 @@ def register_handlers(
                 queue=queue,
                 headers={ATTEMPT_HEADER: attempt + 1},
                 message_id=raw.message_id,
+                message_type=raw.raw_message.type,
+                timestamp=raw.raw_message.timestamp,
                 persist=True,
             )

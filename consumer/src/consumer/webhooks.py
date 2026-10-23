@@ -1,12 +1,14 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Self
+from typing import Self, override
 from uuid import UUID
 
 import httpx
 from data.enums import Currency, PaymentStatus
 from data.repositories.payments import PaymentRead
 from pydantic import BaseModel
+
+from consumer.services.payments import PaymentNotifier
 
 
 class WebhookPayload(BaseModel):
@@ -27,10 +29,11 @@ class WebhookPayload(BaseModel):
         )
 
 
-class WebhookNotifier:
+class WebhookNotifier(PaymentNotifier):
     def __init__(self, client: httpx.AsyncClient) -> None:
         self._client = client
 
+    @override
     async def notify(self, payment: PaymentRead) -> None:
         response = await self._client.post(
             payment.webhook_url,

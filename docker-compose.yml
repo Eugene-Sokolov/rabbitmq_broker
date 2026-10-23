@@ -102,6 +102,9 @@ services:
     build:
       context: .
       dockerfile: consumer/Dockerfile
+    # Обработка сообщения занимает до 15 с (шлюз до 5 с и webhook до 10 с), и FastStream ждёт
+    # её завершения до 15 с. Docker по умолчанию убивает контейнер через 10 с после SIGTERM.
+    stop_grace_period: 20s
     env_file:
       - path: consumer/.env.example
       - path: consumer/.env

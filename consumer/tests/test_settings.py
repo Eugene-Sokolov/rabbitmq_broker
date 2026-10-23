@@ -42,6 +42,24 @@ def test_settings_require_urls(monkeypatch: pytest.MonkeyPatch, variable: str) -
 
 
 @pytest.mark.parametrize(
+    "url",
+    [
+        "postgresql://payments:payments@postgres:5432/payments",
+        "mysql://payments:payments@db/payments",
+        "not-a-url",
+    ],
+)
+def test_settings_reject_non_asyncpg_database_url(
+    monkeypatch: pytest.MonkeyPatch,
+    url: str,
+) -> None:
+    monkeypatch.setenv("DATABASE_URL", url)
+
+    with pytest.raises(ValidationError, match="database_url"):
+        Settings()
+
+
+@pytest.mark.parametrize(
     ("variable", "value"),
     [
         ("CONSUMER_PREFETCH_COUNT", "0"),

@@ -1,4 +1,5 @@
 from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid7
 
@@ -11,6 +12,8 @@ from faststream.rabbit.annotations import RabbitMessage
 
 
 RETRY = RetryPolicy(max_attempts=3)
+EVENT_TYPE = "payment.created"
+EVENT_CREATED_AT = datetime(2026, 10, 22, 12, 0, tzinfo=UTC)
 
 
 class _FakeProcessor:
@@ -51,6 +54,8 @@ async def _publish(broker: RabbitBroker, payment_id: UUID, attempt: int | None =
         queue=PAYMENTS_QUEUE,
         headers=headers,
         message_id="event-1",
+        message_type=EVENT_TYPE,
+        timestamp=EVENT_CREATED_AT,
     )
 
 
@@ -84,6 +89,8 @@ async def test_failed_attempt_is_republished_to_retry_queue_with_next_attempt(
     assert body == {"payment_id": str(payment_id)}
     assert message.headers[ATTEMPT_HEADER] == (attempt or 1) + 1
     assert message.message_id == "event-1"
+    assert message.raw_message.type == EVENT_TYPE
+    assert message.raw_message.timestamp == EVENT_CREATED_AT
 
 
 async def test_last_failed_attempt_is_rejected_for_dead_lettering() -> None:

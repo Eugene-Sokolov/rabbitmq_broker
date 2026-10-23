@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Annotated, Self
 
 from pydantic import (
     AmqpDsn,
@@ -7,6 +7,7 @@ from pydantic import (
     PositiveFloat,
     PositiveInt,
     PostgresDsn,
+    UrlConstraints,
     model_validator,
 )
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -15,7 +16,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(frozen=True)
 
-    database_url: PostgresDsn
+    database_url: Annotated[PostgresDsn, UrlConstraints(allowed_schemes=["postgresql+asyncpg"])]
     rabbitmq_url: AmqpDsn
     prefetch_count: PositiveInt = Field(default=10, validation_alias="CONSUMER_PREFETCH_COUNT")
     max_attempts: PositiveInt = Field(default=3, validation_alias="CONSUMER_MAX_ATTEMPTS")

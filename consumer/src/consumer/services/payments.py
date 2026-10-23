@@ -1,4 +1,4 @@
-from typing import Protocol
+from typing import Protocol, override
 from uuid import UUID
 
 from data.enums import PaymentStatus
@@ -14,12 +14,16 @@ class PaymentNotifier(Protocol):
     async def notify(self, payment: PaymentRead) -> None: ...
 
 
+class PaymentProcessing(Protocol):
+    async def process(self, payment_id: UUID) -> object: ...
+
+
 class PaymentNotFoundError(Exception):
     def __init__(self, payment_id: UUID) -> None:
         super().__init__(f"Payment {payment_id} not found")
 
 
-class PaymentProcessor:
+class PaymentProcessor(PaymentProcessing):
     def __init__(
         self,
         sessions: async_sessionmaker[AsyncSession],
@@ -30,6 +34,7 @@ class PaymentProcessor:
         self._gateway = gateway
         self._notifier = notifier
 
+    @override
     async def process(self, payment_id: UUID) -> PaymentRead:
         payment = await self._get(payment_id)
         if payment.status is PaymentStatus.PENDING:
