@@ -16,7 +16,7 @@ services:
       - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/conf.d/20-custom.conf:ro
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -37,7 +37,7 @@ services:
     entrypoint: ["sh", "-c"]
     command:
       - >-
-        wget -q -O /dev/null
+        wget -O /dev/null
         --header "Content-Type: application/json"
         --post-file /definitions.json
         "http://$${RABBITMQ_DEFAULT_USER}:$${RABBITMQ_DEFAULT_PASS}@rabbitmq:15672/api/definitions"
