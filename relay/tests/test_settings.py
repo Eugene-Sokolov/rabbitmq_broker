@@ -69,6 +69,24 @@ def test_settings_require_urls(monkeypatch: pytest.MonkeyPatch, variable: str) -
         Settings()
 
 
+@pytest.mark.parametrize(
+    "url",
+    [
+        "postgresql://payments:payments@postgres:5432/payments",
+        "mysql://payments:payments@db/payments",
+        "not-a-url",
+    ],
+)
+def test_settings_reject_non_asyncpg_database_url(
+    monkeypatch: pytest.MonkeyPatch,
+    url: str,
+) -> None:
+    monkeypatch.setenv("DATABASE_URL", url)
+
+    with pytest.raises(ValidationError, match="database_url"):
+        Settings()
+
+
 def test_settings_reject_non_amqp_rabbitmq_url(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("RABBITMQ_URL", "http://rabbitmq:15672/")
 

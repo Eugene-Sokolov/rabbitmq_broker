@@ -17,6 +17,10 @@ def main() -> None:
     asyncio.run(_run(Settings()))
 
 
+def create_broker(rabbitmq_url: str) -> RabbitBroker:
+    return RabbitBroker(rabbitmq_url, default_channel=Channel(on_return_raises=True))
+
+
 async def _run(settings: Settings) -> None:
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
@@ -24,9 +28,7 @@ async def _run(settings: Settings) -> None:
         loop.add_signal_handler(signal_number, stop.set)
 
     engine = create_async_engine(str(settings.database_url))
-    broker = RabbitBroker(
-        str(settings.rabbitmq_url), default_channel=Channel(on_return_raises=True)
-    )
+    broker = create_broker(str(settings.rabbitmq_url))
     relay = OutboxRelay(
         async_sessionmaker(engine, expire_on_commit=False),
         broker,

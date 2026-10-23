@@ -1,14 +1,22 @@
 from datetime import timedelta
-from typing import Self
+from typing import Annotated, Self
 
-from pydantic import AmqpDsn, Field, PositiveFloat, PositiveInt, PostgresDsn, model_validator
+from pydantic import (
+    AmqpDsn,
+    Field,
+    PositiveFloat,
+    PositiveInt,
+    PostgresDsn,
+    UrlConstraints,
+    model_validator,
+)
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(frozen=True)
 
-    database_url: PostgresDsn
+    database_url: Annotated[PostgresDsn, UrlConstraints(allowed_schemes=["postgresql+asyncpg"])]
     rabbitmq_url: AmqpDsn
     batch_size: PositiveInt = Field(default=100, validation_alias="RELAY_BATCH_SIZE")
     poll_interval: PositiveFloat = Field(default=1.0, validation_alias="RELAY_POLL_INTERVAL")

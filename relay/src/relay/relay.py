@@ -27,7 +27,7 @@ class BatchResult(BaseModel):
 
     fetched: int
     published: int
-    failed: bool
+    failed: int
 
 
 class OutboxRelay:
@@ -64,7 +64,7 @@ class OutboxRelay:
                 logger.exception("Outbox relay iteration failed")
                 result = None
 
-            if result is None or result.failed:
+            if result is None or (result.failed and not result.published):
                 await _wait(stop, backoff)
                 backoff = min(backoff * 2, self._max_backoff)
                 continue
@@ -94,7 +94,7 @@ class OutboxRelay:
         return BatchResult(
             fetched=len(events),
             published=len(published),
-            failed=len(published) < len(events),
+            failed=len(events) - len(published),
         )
 
     async def delete_expired(self) -> int:

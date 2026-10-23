@@ -23,7 +23,7 @@ dev = [
     "aio-pika>=10.1.1",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
-    "testcontainers[postgres]>=4.15.0",
+    "testcontainers[postgres,rabbitmq]>=4.15.0",
 ]
 
 [tool.pytest.ini_options]

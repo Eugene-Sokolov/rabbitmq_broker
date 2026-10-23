@@ -10,12 +10,21 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from testcontainers.community.postgres import PostgresContainer
+from testcontainers.community.rabbitmq import RabbitMqContainer
 
 
 @pytest.fixture(scope="session")
 def postgres_url() -> Iterator[str]:
     with PostgresContainer("postgres:18-alpine", driver="asyncpg") as postgres:
         yield postgres.get_connection_url()
+
+
+@pytest.fixture(scope="session")
+def rabbitmq_url() -> Iterator[str]:
+    with RabbitMqContainer("rabbitmq:4.2-alpine") as rabbitmq:
+        host = rabbitmq.get_container_host_ip()
+        port = rabbitmq.get_exposed_port(rabbitmq.port)
+        yield f"amqp://{rabbitmq.username}:{rabbitmq.password}@{host}:{port}/"
 
 
 @pytest.fixture(scope="session")
